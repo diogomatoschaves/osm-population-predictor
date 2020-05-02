@@ -46,6 +46,19 @@ def save_model(model, model_filepath):
     joblib.dump(model, model_filepath)
 
 
+def load_model(model_filepath):
+    """
+    Loads the model from a pickle file
+
+    :param model_filepath: path pointing to the saved model
+    :return: the loaded model
+    """
+
+    model = joblib.load(model_filepath)
+
+    return model
+
+
 def build_model(
     features, reg_name=None, grid_search=False, regressor_params=None, grid_search_params=None
 ):
