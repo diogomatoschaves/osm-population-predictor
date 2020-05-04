@@ -3,9 +3,11 @@ import logging
 import joblib
 
 import pandas as pd
+import numpy as np
 import seaborn as sb
 import matplotlib.pyplot as plt
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -21,12 +23,12 @@ regressor_params_defaults = {
     },
     "GradientBoostingRegressor": {
         "n_estimators": 300,
-        "max_depth": 6
+        "max_depth": 5, "max_features": 'sqrt',
+        "min_samples_split": 5
     },
 }
 
 grid_search_params_defaults = {
-    "reg": [RandomForestRegressor(), GradientBoostingRegressor()],
     "reg__n_estimators": [250, 300, 350],
     "reg__min_samples_split": [2, 4, 5],
     "reg__max_features": ["sqrt", "log2", "auto"],
@@ -107,12 +109,12 @@ def build_model(
         else:
             param_grid.update(grid_search_params)
 
-        pipeline = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=-1)
+        pipeline = GridSearchCV(pipeline, param_grid=param_grid, n_jobs=-1, cv=3)
 
     return pipeline
 
 
-def get_feature_importance_df(df, model, features):
+def get_feature_importance_df(model, features):
     importance_df = pd.DataFrame(index=[col.replace('_', ' ') for col in features])
     importance_df['importance'] = model.feature_importances_
     importance_df = importance_df.sort_values('importance', ascending=False)
@@ -120,7 +122,17 @@ def get_feature_importance_df(df, model, features):
     return importance_df
 
 
-def model_evaluation(df, model, X_test, y_test, features, population_tests_dir, grid_search=False, plot=True):
+def get_coefficients_df(reg, features):
+
+    coefs_df = pd.DataFrame(index=[col.replace('_', ' ') for col in features])
+    coefs_df['coefs'] = reg.coef_
+    coefs_df['abs_coefs'] = np.abs(reg.coef_)
+    coefs_df = coefs_df.sort_values('abs_coefs', ascending=False)
+
+    return coefs_df
+
+
+def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid_search=False, plot=True):
 
     if grid_search:
         logging.info(f"best estimator: {model.best_estimator_}")
@@ -130,10 +142,15 @@ def model_evaluation(df, model, X_test, y_test, features, population_tests_dir, 
 
         return
 
-    importance_df = get_feature_importance_df(df, model['reg'], [feature for feature in features if feature != 'area'])
+    pruned_features = [feature for feature in features if feature != 'area']
+
+    if isinstance(model['reg'], (LinearRegression, Ridge, Lasso)):
+        results_df = get_coefficients_df(model['reg'], pruned_features)
+    else:
+        results_df = get_feature_importance_df(model['reg'], pruned_features)
 
     if plot:
-        plot_results(importance_df[:20])
+        plot_results(results_df[:20])
 
     total_score = model.score(X_test, y_test)
 
@@ -225,6 +242,6 @@ def train_model(df_model, population_tests_dir, grid_search):
 
     logging.info("\tevaluating model...")
 
-    model_evaluation(df_model, model, X_test, y_test, features_vars, population_tests_dir, grid_search)
+    model_evaluation(model, X_test, y_test, features_vars, population_tests_dir, grid_search)
 
     return model

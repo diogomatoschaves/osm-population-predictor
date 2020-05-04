@@ -1,9 +1,6 @@
 import sys
 import os
 import logging
-import json
-
-from turf import feature_collection
 
 from model.train_model import train_model, save_model
 from preprocessing.process_data import process_data
