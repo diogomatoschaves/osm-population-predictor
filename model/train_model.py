@@ -15,7 +15,7 @@ from sklearn_evaluation.plot import grid_search as grid_plot
 
 from model.pipeline_classes import CalculateArea, FeatureSelector, AreaNormalizer, RemoveColumn
 from model.tests_data import tests_areas, tests_actual
-from preprocessing.process_data import import_polygons_data
+from preprocessing.process_data import import_polygons_data, calculate_area
 
 regressor_params_defaults = {
     "RandomForestRegressor": {
@@ -23,7 +23,7 @@ regressor_params_defaults = {
     },
     "GradientBoostingRegressor": {
         "n_estimators": 300,
-        "max_depth": 5, "max_features": 'sqrt',
+        "max_depth": 5,
         "min_samples_split": 5
     },
 }
@@ -169,12 +169,17 @@ def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid
 
         test_row = population_tests.iloc[i:i+1, :].copy()
 
-        test_row["area"] = tests_areas[test_case]
+        if test_case in tests_areas:
+            test_row["area"] = tests_areas[test_case]
+
+        else:
+            test_row["area"] = test_row["geometry"].apply(lambda poly: calculate_area(poly))
 
         pred = model.predict(test_row) * test_row["area"]
 
         population_results["prediction"][test_case] = pred.values[0]
-        population_results["actual"][test_case] = tests_actual[test_case]
+        population_results["actual"][test_case] = tests_actual[test_case] \
+            if test_case in tests_actual else None
 
     results_df = pd.DataFrame(population_results)
 
