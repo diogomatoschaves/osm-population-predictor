@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn_evaluation.plot import grid_search as grid_plot
 
-from model.pipeline_classes import CalculateArea, FeatureSelector, AreaNormalizer, RemoveColumn
+from model.pipeline_classes import CalculateArea, FeatureSelector, AreaNormalizer, RemoveColumn, FeaturePolynomial
 from model.tests_data import tests_areas, tests_actual
 from preprocessing.process_data import import_polygons_data, calculate_area
 
@@ -26,6 +26,7 @@ regressor_params_defaults = {
         "max_depth": 5,
         "min_samples_split": 5
     },
+    "Ridge": {},
 }
 
 grid_search_params_defaults = {
@@ -84,7 +85,7 @@ def build_model(
 
         if not reg_name:
             reg_name = "GradientBoostingRegressor"
-        if len(regressor_params) == 0:
+        if len(regressor_params) == 0 and reg_name in regressor_params_defaults:
             regressor_params.update(regressor_params_defaults[reg_name])
 
         regressor = eval(reg_name)(**regressor_params)
@@ -96,6 +97,7 @@ def build_model(
         ('feature_selector', FeatureSelector(columns=features)),
         ('area_normalizer', AreaNormalizer()),
         ('remove_columns', RemoveColumn(['area'])),
+        ('feature_mapping', FeaturePolynomial(1, True)),
         ('pre-processing', StandardScaler()),
         ('reg', regressor)
     ])
@@ -114,8 +116,29 @@ def build_model(
     return pipeline
 
 
+def get_feature_names(coeffs, features):
+
+    if len(coeffs) % len(features) == 0:
+        scaling = int(len(coeffs) / len(features))
+        index = []
+
+        for i in range(1, scaling + 1):
+            feature_names = [col.replace('_', ' ') + f"_{i}" for col in features]
+            index.extend(feature_names)
+    else:
+        return None
+
+    return index
+
+
 def get_feature_importance_df(model, features):
-    importance_df = pd.DataFrame(index=[col.replace('_', ' ') for col in features])
+
+    feature_names = get_feature_names(model.feature_importances_, features)
+
+    if not feature_names:
+        return
+
+    importance_df = pd.DataFrame(index=feature_names)
     importance_df['importance'] = model.feature_importances_
     importance_df = importance_df.sort_values('importance', ascending=False)
 
@@ -123,6 +146,11 @@ def get_feature_importance_df(model, features):
 
 
 def get_coefficients_df(reg, features):
+
+    feature_names = get_feature_names(reg.coef_, features)
+
+    if not feature_names:
+        return
 
     coefs_df = pd.DataFrame(index=[col.replace('_', ' ') for col in features])
     coefs_df['coefs'] = reg.coef_
@@ -138,7 +166,7 @@ def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid
         logging.info(f"best estimator: {model.best_estimator_}")
         logging.info(f"best params: {model.best_params_}")
         logging.info(f"best score: {model.best_score_}")
-        logging.info(f"all_results: {model.cv_results_}")
+        # logging.info(f"all_results: {model.cv_results_}")
 
         return
 
@@ -211,20 +239,27 @@ def plot_results(results, factor=100.0):
 def train_model(df_model, population_tests_dir, grid_search):
 
     not_features = [
-        'updated',
-        'ADMIN',
-        'ISO_A3',
-        'building_count',
-        'count',
-        'osm_users',
-        'geometry',
-        'gdp',
-        'population',
-        'area_km2',
-        'highway_sum',
-        'highway_length',
+        'id', 
+        'updated', 
+        'ADMIN', 
+        'ISO_A3'
+        'building_count'
+        'count'
+        'osm_users'
+        'geometry'
+        'gdp'
+        'population'
+        'area_km2'
+        'highway_sum'
+        'highway_length'
         'osm_objects'
     ]
+
+    grid_search_params = {
+        "feature_mapping__order": [1, 2, 3],
+        "reg": [Ridge(), Lasso()],
+        "reg__alpha": [3, 5, 10, 50, 100],
+    }
 
     features_vars = [col for col in df_model.columns if col not in not_features]
     target_var = 'population'
@@ -236,7 +271,12 @@ def train_model(df_model, population_tests_dir, grid_search):
 
     logging.info("\tbuilding model...")
 
-    model = build_model(features_vars, grid_search=grid_search)
+    model = build_model(
+        features_vars,
+        grid_search=grid_search,
+        grid_search_params=grid_search_params,
+        reg_name="Ridge"
+    )
 
     if grid_search:
         logging.info('\tPerforming grid search...')

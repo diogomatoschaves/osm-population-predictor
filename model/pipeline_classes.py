@@ -72,11 +72,15 @@ class RemoveColumn(BaseEstimator, TransformerMixin):
 
 class FeaturePolynomial(BaseEstimator, TransformerMixin):
 
+    def __init__(self, order, only_self_terms=True):
+        self.order = order
+        self.only_self_terms = only_self_terms
+
     def fit(self, X, y=None, **fit_params):
         return self
 
     def transform(self, X, y=None, **transform_params):
 
-        poly_X = feature_mapping(X.to_numpy(), 3, only_self_terms=True)
+        poly_X = feature_mapping(X.to_numpy(), self.order, only_self_terms=self.only_self_terms)
 
         return poly_X

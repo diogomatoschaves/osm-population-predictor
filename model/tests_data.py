@@ -12,5 +12,7 @@ tests_actual = {
     "isle-of-wight": 1.41538E5,
     "hamburg": 1.822E6,
     "portugal": 10.28E6,
-    "lisbon": 504718
+    "lisbon": 504718,
+    "munich": 1471508,
+    "oldenburg": 168210
 }
