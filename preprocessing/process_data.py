@@ -4,8 +4,12 @@ import re
 
 import pandas as pd
 import geopandas as gpd
+from fiona.errors import DriverError
 from turf import polygon, feature_collection, area
 from turf.utils.exceptions import InvalidInput
+
+from preprocessing.data_processing_params import delete_outliers_bool
+from model.model_params import not_features
 
 
 def import_polygons_data(dataset_dir):
@@ -19,14 +23,18 @@ def import_polygons_data(dataset_dir):
     df = None
     file_names = []
     for filename in os.listdir(dataset_dir):
+
         file_path = os.path.join(dataset_dir, filename)
 
-        file_names.append(filename.split('_')[0])
+        try:
+            if df is not None:
+                df = pd.concat([df, gpd.read_file(file_path)])
+            else:
+                df = gpd.read_file(file_path)
 
-        if df is not None:
-            df = pd.concat([df, gpd.read_file(file_path)])
-        else:
-            df = gpd.read_file(file_path)
+            file_names.append(filename.split('_')[0])
+        except DriverError:
+            continue
 
     return df, file_names
 
@@ -106,6 +114,34 @@ def calculate_area(poly):
     return a
 
 
+def detect_outliers(column, df):
+
+    min_value = df[column].quantile(q=0.0001)
+    max_value = df[column].quantile(q=0.9999)
+
+    try:
+        outliers = df[(df[column] > max_value) | (df[column] < min_value)]
+    except IndexError:
+        outliers = None
+
+    return outliers
+
+
+def delete_outliers(features, df):
+
+    outliers = set()
+    for feature in features:
+
+        new_outliers = detect_outliers(feature, df)
+
+        if new_outliers is None:
+            continue
+
+        outliers.update(new_outliers.index)
+
+    return df[~df.index.isin(outliers)].copy()
+
+
 def process_data(base_data_dir, input_data_file):
 
     logging.info("\tImporting data...")
@@ -115,6 +151,11 @@ def process_data(base_data_dir, input_data_file):
     logging.info("\tCleaning data...")
 
     base_data_df = filter_data(base_data_df, "updated")
+
+    features = [col for col in base_data_df.columns if col not in not_features]
+
+    if delete_outliers_bool:
+        base_data_df = delete_outliers(features, base_data_df)
 
     base_data_df = delete_empty_columns(base_data_df)
 
