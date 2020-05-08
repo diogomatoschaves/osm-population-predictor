@@ -7,27 +7,11 @@ from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn_evaluation.plot import grid_search as grid_plot
 
 from model.pipeline_classes import CalculateArea, FeatureSelector, AreaNormalizer, RemoveColumn, FeaturePolynomial
 from model.model_evaluation import model_evaluation
+from model.model_params import regressor_params, feature_mapping_params
 
-
-regressor_params_defaults = {
-    "RandomForestRegressor": {
-        "n_estimators": 200
-    },
-    "GradientBoostingRegressor": {
-        "n_estimators": 300,
-        "max_depth": 5,
-        "min_samples_split": 5
-    },
-    "Ridge": {},
-    "Lasso": {
-        "alpha": 2,
-        "max_iter": 2000
-    }
-}
 
 grid_search_params_defaults = {
     "reg__n_estimators": [250, 300, 350],
@@ -63,20 +47,16 @@ def load_model(model_filepath):
 
 
 def build_model(
-    features, reg_name=None, grid_search=False, regressor_params=None, grid_search_params=None
+    features, reg_name=None, grid_search=False, grid_search_params=None
 ):
     """
     Builds the pipeline required to fit the features into the model
     :param features: features to learn from
     :param reg_name: classifier name. Default will be RandomForestRegressor
     :param grid_search: If grid search should be performed
-    :param regressor_params: extra params to be passed to the classifier
     :param grid_search_params: extra params to be passed to the grid search
     :return: the built model
     """
-
-    if not regressor_params:
-        regressor_params = {}
 
     if not grid_search_params:
         grid_search_params = {}
@@ -84,10 +64,8 @@ def build_model(
     try:
         if not reg_name:
             reg_name = "GradientBoostingRegressor"
-        if len(regressor_params) == 0 and reg_name in regressor_params_defaults:
-            regressor_params.update(regressor_params_defaults[reg_name])
 
-        regressor = eval(reg_name)(**regressor_params)
+        regressor = eval(reg_name)(**regressor_params[reg_name])
     except NameError:
         raise Exception(f"{reg_name} is not a valid Regressor")
 
@@ -96,7 +74,7 @@ def build_model(
         ('feature_selector', FeatureSelector(columns=features)),
         ('area_normalizer', AreaNormalizer()),
         ('remove_columns', RemoveColumn(['area'])),
-        ('feature_mapping', FeaturePolynomial(2, True)),
+        ('feature_mapping', FeaturePolynomial(**feature_mapping_params)),
         ('pre-processing', StandardScaler()),
         ('reg', regressor)
     ])

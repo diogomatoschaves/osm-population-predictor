@@ -14,5 +14,11 @@ tests_actual = {
     "portugal": 10.28E6,
     "lisbon": 504718,
     "munich": 1471508,
-    "oldenburg": 168210
+    "oldenburg": 168210,
+    "chicago": 2.706E6,
+    "washington-dc": 702455,
+    "san-francisco": 883305,
+    "new-york": 8.399E6,
+    "san-diego": 1.426E6,
+    "los-angeles": 3.99E6
 }

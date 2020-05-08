@@ -4,11 +4,24 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sb
+from matplotlib import colors, cm
 
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 
 from model.tests_data import tests_areas, tests_actual
 from preprocessing.process_data import import_polygons_data, calculate_area
+
+
+base_color = sb.color_palette()[0]
+
+
+def remove_borders(fig):
+
+    axes = fig.axes[0]
+    axes.spines["top"].set_visible(False)
+    axes.spines["left"].set_visible(False)
+    axes.spines["right"].set_visible(False)
+    axes.spines["bottom"].set_visible(False)
 
 
 def get_feature_names(coeffs, features):
@@ -90,17 +103,33 @@ def plot_comparisons(results, factor=100.0, cbar_kws=None):
 
     plt.figure(figsize=(8, 10))
 
+    vmin = results.values[:, -1].ravel().min() * factor
+    vmax = results.values[:, -1].ravel().max() * factor
+
+    kwargs = {"cmap": 'Blues'}
+
+    if vmin < 0:
+        norm = colors.DivergingNorm(vmin=vmin, vcenter=0, vmax=vmax)
+
+        blues = cm.get_cmap('Blues', 128)
+
+        neg_pos = np.vstack((blues(np.linspace(1, 0, 128)), blues(np.linspace(0, 1, 128))))
+
+        cmap = colors.ListedColormap(neg_pos, name='CustomBlues')
+
+        kwargs.update({"norm": norm, "cmap": cmap})
+
     ax = sb.heatmap(
         results * factor,
-        vmin=results.values[:, -1].ravel().min() * factor,
-        vmax=results.values[:, -1].ravel().max() * factor,
+        vmin=vmin,
+        vmax=vmax,
         mask=mask,
         annot=True,
         fmt=".1f",
-        cmap='Blues',
         cbar_kws=cbar_kws,
         linecolor='#f2f2f2',
-        linewidths=0.01
+        linewidths=0.01,
+        **kwargs
     )
 
     for (j, i), label in np.ndenumerate(results.values):
@@ -115,15 +144,20 @@ def plot_comparisons(results, factor=100.0, cbar_kws=None):
     plt.show()
 
 
-def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid_search=False, plot=True):
+def plot_barplot(column, df, title, x_label, y_label):
 
-    if grid_search:
-        logging.info(f"best estimator: {model.best_estimator_}")
-        logging.info(f"best params: {model.best_params_}")
-        logging.info(f"best score: {model.best_score_}")
-        # logging.info(f"all_results: {model.cv_results_}")
+    fig = plt.figure(figsize=(7, 10))
+    sb.barplot(data=df, x=column, y=df.index, color=base_color)
 
-        return
+    plt.xticks(rotation=90)
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    remove_borders(fig)
+
+
+def plot_feature_results(model, features, plot):
 
     pruned_features = [feature for feature in features if feature != 'area']
 
@@ -132,18 +166,26 @@ def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid
         factor = 1
         cbar_kws = {'format': '%.0f'}
 
-        if plot:
-            plot_comparisons(results_df[:20], factor, cbar_kws)
+        if plot and results_df is not None:
+
+            plot_barplot(
+                'coefs',
+                results_df[:20],
+                title='Coefficients by feature',
+                x_label='Coefficient',
+                y_label='Features'
+            )
     else:
         results_df = get_feature_importance_df(model['reg'], pruned_features)
         factor = 100
 
-        if plot:
+        if plot and results_df is not None:
             plot_results(results_df[:20], factor)
 
-    total_score = model.score(X_test, y_test)
+    plt.show()
 
-    logging.info(f'Total score: {total_score}')
+
+def plot_cities_results(model, population_tests_dir, plot):
 
     population_tests, file_names = import_polygons_data(population_tests_dir)
 
@@ -156,6 +198,7 @@ def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid
     for i in range(population_tests.shape[0]):
 
         test_case = file_names[i]
+        city_name = ' '.join([item[0].upper() + item[1:] for item in test_case.split('-')])
 
         test_row = population_tests.iloc[i:i+1, :].copy()
 
@@ -167,14 +210,14 @@ def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid
 
         pred = model.predict(test_row) * test_row["area"]
 
-        population_results["prediction"][test_case] = pred.values[0]
-        population_results["actual"][test_case] = tests_actual[test_case] \
+        population_results["prediction"][city_name] = pred.values[0]
+        population_results["actual"][city_name] = tests_actual[test_case] \
             if test_case in tests_actual else None
 
         try:
-            diff = (population_results["prediction"][test_case] - population_results["actual"][test_case]) \
-                   / population_results["actual"][test_case]
-            population_results["difference"][test_case] = round(diff, 2)
+            diff = (population_results["prediction"][city_name] - population_results["actual"][city_name]) \
+                   / population_results["actual"][city_name]
+            population_results["difference"][city_name] = round(diff, 2)
 
         except TypeError:
             population_results["difference"][test_case] = 'N/A'
@@ -183,3 +226,21 @@ def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid
 
     if plot:
         plot_comparisons(results_df)
+
+
+def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid_search=False, plot=True):
+
+    if grid_search:
+        logging.info(f"best estimator: {model.best_estimator_}")
+        logging.info(f"best params: {model.best_params_}")
+        logging.info(f"best score: {model.best_score_}")
+
+        return
+
+    total_score = model.score(X_test, y_test)
+
+    logging.info(f'Total score: {total_score}')
+
+    plot_feature_results(model, features, plot)
+
+    plot_cities_results(model, population_tests_dir, plot)
