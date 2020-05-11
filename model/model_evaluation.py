@@ -8,7 +8,7 @@ from matplotlib import colors, cm
 
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 
-from model.tests_data import tests_areas, tests_actual
+from model.tests_data import tests_actual
 from preprocessing.process_data import import_polygons_data, calculate_area
 
 
@@ -16,6 +16,12 @@ base_color = sb.color_palette()[0]
 
 
 def remove_borders(fig):
+    """
+    Removes the borders from a matplotlib figure.
+
+    :param fig: figure whose borders to be removed
+    :return: None
+    """
 
     axes = fig.axes[0]
     axes.spines["top"].set_visible(False)
@@ -25,6 +31,13 @@ def remove_borders(fig):
 
 
 def get_feature_names(coeffs, features):
+    """
+    Returns the features names according to their polynomial degree
+
+    :param coeffs: coefficients / importances of the model
+    :param features: original features array
+    :return: The mapped feature names
+    """
 
     if len(coeffs) % len(features) == 0:
         scaling = int(len(coeffs) / len(features))
@@ -40,6 +53,13 @@ def get_feature_names(coeffs, features):
 
 
 def get_feature_importance_df(model, features):
+    """
+    Returns the feature importance results data frame
+
+    :param model: the fitted model
+    :param features: the sequence of the original features
+    :return: the results data frame
+    """
 
     feature_names = get_feature_names(model.feature_importances_, features)
 
@@ -54,6 +74,12 @@ def get_feature_importance_df(model, features):
 
 
 def get_coefficients_df(reg, features):
+    """
+    Returns the extracted regressor coefficients results on a data frame
+    :param reg: the fitted regressor
+    :param features: the sequence of the original features
+    :return: the results data frame
+    """
 
     feature_names = get_feature_names(reg.coef_, features)
 
@@ -73,8 +99,6 @@ def plot_results(results, factor=100.0):
     Plots the results
     :param results: a data frame with the results
     :param factor: factor to multiply the results with
-    :param cmap: color map of the heatmap
-    :param cbar: whether to display a color bar
     :return: None
     """
 
@@ -94,6 +118,15 @@ def plot_results(results, factor=100.0):
 
 
 def plot_comparisons(results, factor=100.0, cbar_kws=None):
+
+    """
+    Plots the city / place population comparisons results as a heatmap
+
+    :param results: a data frame with the results
+    :param factor: factor to multiply the results with
+    :param cbar_kws: how to format the color bar. Optional
+    :return: None
+    """
 
     if not cbar_kws:
         cbar_kws = {'format': '%.0f%%'}
@@ -145,6 +178,16 @@ def plot_comparisons(results, factor=100.0, cbar_kws=None):
 
 
 def plot_barplot(column, df, title, x_label, y_label):
+    """
+    Plots a barplot of the coefficients results
+
+    :param column: column of the values to be plotted
+    :param df: data frame
+    :param title: title of plot
+    :param x_label: x axis label
+    :param y_label: y axis label
+    :return: None
+    """
 
     fig = plt.figure(figsize=(7, 10))
     sb.barplot(data=df, x=column, y=df.index, color=base_color)
@@ -157,7 +200,15 @@ def plot_barplot(column, df, title, x_label, y_label):
     remove_borders(fig)
 
 
-def plot_feature_results(model, features, plot):
+def plot_feature_results(model, features, plot=True):
+    """
+    Retrieves and plots the coefficients / feature importance results.
+
+    :param model: fitted model
+    :param features: sequence of the original features
+    :param plot: whether results should be plotted or not.
+    :return: None
+    """
 
     pruned_features = [feature for feature in features if feature != 'area']
 
@@ -179,13 +230,29 @@ def plot_feature_results(model, features, plot):
         results_df = get_feature_importance_df(model['reg'], pruned_features)
         factor = 100
 
-        if plot and results_df is not None:
-            plot_results(results_df[:20], factor)
+        # if plot and results_df is not None:
+        #     plot_results(results_df[:20], factor)
+
+        plot_barplot(
+            'importance',
+            results_df[:20] * factor,
+            title='Coefficients by feature',
+            x_label='Coefficient',
+            y_label='Features'
+        )
 
     plt.show()
 
 
-def plot_cities_results(model, population_tests_dir, plot):
+def plot_cities_results(model, population_tests_dir, plot=True):
+    """
+    Retrieves and plots the population comparison results.
+
+    :param model: fitted model
+    :param population_tests_dir: directory pointing to where the population tests are
+    :param plot: whether results should be plotted or not.
+    :return: None
+    """
 
     population_tests, file_names = import_polygons_data(population_tests_dir)
 
@@ -202,11 +269,7 @@ def plot_cities_results(model, population_tests_dir, plot):
 
         test_row = population_tests.iloc[i:i+1, :].copy()
 
-        if test_case in tests_areas:
-            test_row["area"] = tests_areas[test_case]
-
-        else:
-            test_row["area"] = test_row["geometry"].apply(lambda poly: calculate_area(poly))
+        test_row["area"] = test_row["geometry"].apply(lambda poly: calculate_area(poly))
 
         pred = model.predict(test_row) * test_row["area"]
 
@@ -229,6 +292,18 @@ def plot_cities_results(model, population_tests_dir, plot):
 
 
 def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid_search=False, plot=True):
+    """
+    Wrapper around the model evaluation steps.
+
+    :param model: fitted model
+    :param X_test: test features data frame
+    :param y_test: test target data frame
+    :param features: original sequence of features
+    :param population_tests_dir: directory pointing to where the population tests are
+    :param grid_search: whether to perform grid search or not
+    :param plot: whether results should be plotted or not.
+    :return:
+    """
 
     if grid_search:
         logging.info(f"best estimator: {model.best_estimator_}")

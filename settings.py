@@ -5,7 +5,6 @@ feature_mapping_params = {
     "only_self_terms": True
 }
 
-
 regressor_name = "Lasso"
 
 regressor_params = {
@@ -15,8 +14,6 @@ regressor_params = {
     "GradientBoostingRegressor": {
         "n_estimators": 200,
         "max_features": "sqrt",
-        "max_depth": 5,
-        "min_samples_split": 5
     },
     "Ridge": {},
     "Lasso": {
@@ -24,6 +21,8 @@ regressor_params = {
         "max_iter": 2000
     }
 }
+
+grid_search = False
 
 not_features = [
     'id',
@@ -41,3 +40,4 @@ not_features = [
     'highway_length',
     'osm_objects'
 ]
+delete_outliers_bool = True

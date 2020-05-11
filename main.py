@@ -6,15 +6,14 @@ from model.train_model import train_model, save_model
 from preprocessing.process_data import process_data
 
 try:
-    directory_path = "/".join(
-        os.path.dirname(os.path.realpath(__file__)).split("/")[:-1]
-    )
+    directory_path = os.path.dirname(os.path.realpath(__file__))
     sys.path.append(directory_path)
 except NameError:
     pass
 
 from utils.logger import configure_logger
 from utils.config_parser import get_config
+from settings import grid_search
 
 
 def main():
@@ -36,11 +35,6 @@ def main():
     # ========================= Train model ===============================
 
     logging.info("Training model and evaluating...")
-
-    try:
-        grid_search = eval(config.grid_search)
-    except NameError:
-        grid_search = False
 
     model = train_model(base_data_df, config.population_tests_dir, grid_search)
 

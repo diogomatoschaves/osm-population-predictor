@@ -25,7 +25,7 @@ After running the model, one can use [osm-feature-extractor](https://github.com/
 generate user-defined areas on which to estimate the population on. The referenced project has instructions on how to 
 achieve that.
 
-The main results of the model are:
+The main results of the model, using a **Lasso** regressor are:
 
 | score | MSE | 
 |-----------|--------|
@@ -59,6 +59,8 @@ You can adjust the project config variables in [proj.conf](proj.conf).
 **input_data_file**: _Name of file with training data_ <br>
 **out_file**: _Name of file to save model on_ <br>
 **grid_search**: _Whether to perform grid search on the data_ <br>
+
+One can also adjust specific model parameters in [settings.py](settings.py).
 
 ## Libraries Used
 

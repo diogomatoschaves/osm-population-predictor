@@ -8,8 +8,7 @@ from fiona.errors import DriverError
 from turf import polygon, feature_collection, area
 from turf.utils.exceptions import InvalidInput
 
-from preprocessing.data_processing_params import delete_outliers_bool
-from model.model_params import not_features
+from settings import not_features, delete_outliers_bool
 
 
 def import_polygons_data(dataset_dir):
@@ -57,6 +56,13 @@ def load_data(base_data_dir, file_name):
 
 
 def filter_data(df, filter_column):
+    """
+    Filters a data frame by a boolean column
+
+    :param df: data frame
+    :param filter_column: boolean column to filter the data frame by
+    :return: the filtered data frame
+    """
 
     df = df[df[filter_column]]
 
@@ -64,6 +70,12 @@ def filter_data(df, filter_column):
 
 
 def delete_empty_columns(df):
+    """
+    Deletes columns that have only one unique value
+
+    :param df: data frame
+    :return: the pruned data frame
+    """
 
     for col in df.columns:
         if df[col].nunique() == 1:
@@ -73,6 +85,12 @@ def delete_empty_columns(df):
 
 
 def get_regex_matches(regex_str):
+    """
+    Finds the matches according to a regex pattern
+
+    :param regex_str: the string to be matched
+    :return: the found matches
+    """
 
     pattern = r"\((.*?)\)"
 
@@ -84,6 +102,12 @@ def get_regex_matches(regex_str):
 
 
 def handle_multi_polygon(multi_polygon):
+    """
+    Extracts individual polygons from a MultiPolygon shapely representation
+
+    :param multi_polygon: a MultiPolygon shapely representation
+    :return: a feature collection of the extracted polygons
+    """
 
     matches = get_regex_matches(multi_polygon)
 
@@ -103,6 +127,11 @@ def handle_multi_polygon(multi_polygon):
 
 
 def calculate_area(poly):
+    """
+    Calculates the area of a polygon in km2
+    :param poly: Polygon or MultiPolygon shapely object
+    :return: the area of the object
+    """
 
     if poly.geom_type == 'MultiPolygon':
         coords = handle_multi_polygon(poly.wkt)
@@ -115,6 +144,13 @@ def calculate_area(poly):
 
 
 def detect_outliers(column, df):
+    """
+    Detects outliers according to a specified rule
+
+    :param column: name of column to detect the outliers on
+    :param df: data frame
+    :return: the outliers as a data frame
+    """
 
     min_value = df[column].quantile(q=0.0001)
     max_value = df[column].quantile(q=0.9999)
@@ -128,6 +164,13 @@ def detect_outliers(column, df):
 
 
 def delete_outliers(features, df):
+    """
+    Deletes the outliers of a collection of features
+
+    :param features: sequence of features to delete the outliers on
+    :param df: data frame
+    :return: the pruned data frame
+    """
 
     outliers = set()
     for feature in features:
@@ -143,6 +186,14 @@ def delete_outliers(features, df):
 
 
 def process_data(base_data_dir, input_data_file):
+    """
+    Handles all the required preprocessing of the data before it can be fed into
+    the machine learning pipeline.
+
+    :param base_data_dir: directory of where the base data lives
+    :param input_data_file: name of the file containing the input data
+    :return: the processed data
+    """
 
     logging.info("\tImporting data...")
 

@@ -8,6 +8,10 @@ from preprocessing.process_data import calculate_area
 
 class CalculateArea(BaseEstimator, TransformerMixin):
 
+    """
+    Calculates area of entry if it's not present in features already.
+    """
+
     def fit(self, X, y=None, **fit_params):
         return self
 
@@ -22,6 +26,9 @@ class CalculateArea(BaseEstimator, TransformerMixin):
 
 
 class FeatureSelector(BaseEstimator, TransformerMixin):
+    """
+    Selects features to be included in the final model.
+    """
 
     def __init__(self, columns):
         self.columns = columns
@@ -38,6 +45,9 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
 
 
 class AreaNormalizer(BaseEstimator, TransformerMixin):
+    """
+    Normalizes all features' values by the area.
+    """
 
     def fit(self, X, y=None, **fit_params):
         return self
@@ -55,7 +65,10 @@ class AreaNormalizer(BaseEstimator, TransformerMixin):
         return pd.DataFrame(X_copy)
 
 
-class RemoveColumn(BaseEstimator, TransformerMixin):
+class RemoveColumns(BaseEstimator, TransformerMixin):
+    """
+    Removes selected columns from the model.
+    """
 
     def __init__(self, columns):
         self.columns = columns
@@ -71,6 +84,9 @@ class RemoveColumn(BaseEstimator, TransformerMixin):
 
 
 class FeaturePolynomial(BaseEstimator, TransformerMixin):
+    """
+    Returns the polynomial terms of features up to a specified degree.
+    """
 
     def __init__(self, order, only_self_terms=True):
         self.order = order

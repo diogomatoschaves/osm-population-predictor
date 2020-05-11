@@ -1,11 +1,4 @@
 
-tests_areas = {
-    "berlin": 891.1,
-    "isle-of-wight": 380,
-    "hamburg": 755.2,
-    "portugal": 91302,
-    "lisbon": 100
-}
 
 tests_actual = {
     "berlin": 3.769E6,

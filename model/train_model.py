@@ -2,23 +2,20 @@ import logging
 
 import joblib
 
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.linear_model import Ridge, Lasso
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from model.pipeline_classes import CalculateArea, FeatureSelector, AreaNormalizer, RemoveColumn, FeaturePolynomial
+from model.pipeline_classes import CalculateArea, FeatureSelector, AreaNormalizer, RemoveColumns, FeaturePolynomial
 from model.model_evaluation import model_evaluation
-from model.model_params import regressor_params, feature_mapping_params
-
+from settings import feature_mapping_params, regressor_params, regressor_name, not_features
 
 grid_search_params_defaults = {
     "reg__n_estimators": [250, 300, 350],
     "reg__min_samples_split": [2, 4, 5],
     "reg__max_features": ["sqrt", "log2", "auto"],
     "reg__max_depth": [2, 3, 5, 6],
-    # "reg__min_samples_leaf": [1, 2, 3]
 }
 
 
@@ -73,7 +70,7 @@ def build_model(
         ('calculate_area', CalculateArea()),
         ('feature_selector', FeatureSelector(columns=features)),
         ('area_normalizer', AreaNormalizer()),
-        ('remove_columns', RemoveColumn(['area'])),
+        ('remove_columns', RemoveColumns(['area'])),
         ('feature_mapping', FeaturePolynomial(**feature_mapping_params)),
         ('pre-processing', StandardScaler()),
         ('reg', regressor)
@@ -94,23 +91,15 @@ def build_model(
 
 
 def train_model(df_model, population_tests_dir, grid_search):
+    """
+    Handles all the logic to build a machine learning pipeline, train the data and
+    evaluate the model.
 
-    not_features = [
-        'id', 
-        'updated', 
-        'ADMIN', 
-        'ISO_A3',
-        'building_count',
-        'count',
-        'osm_users',
-        'geometry',
-        'gdp',
-        'population',
-        'area_km2',
-        'highway_sum',
-        'highway_length',
-        'osm_objects'
-    ]
+    :param df_model: preprocessed data frame containing the training data
+    :param population_tests_dir: directory pointing to where the population tests are
+    :param grid_search: whether to perform grid search on the model or not
+    :return: the fitted model
+    """
 
     grid_search_params = {
         "feature_mapping__order": [1, 2, 3],
@@ -132,7 +121,7 @@ def train_model(df_model, population_tests_dir, grid_search):
         features_vars,
         grid_search=grid_search,
         grid_search_params=grid_search_params,
-        reg_name="Lasso"
+        reg_name=regressor_name
     )
 
     if grid_search:
