@@ -19,11 +19,13 @@ def download_dir(client, resource, dist, local, bucket):
             for subdir in result.get('CommonPrefixes'):
                 download_dir(client, resource, subdir.get('Prefix'), local, bucket)
 
-        for file in result.get('Contents', []):
+        number_files = len(result.get('Contents', []))
+
+        for i, file in enumerate(result.get('Contents', [])):
 
             file_name = file.get('Key')
 
-            logging.info(f'\tDownloading {file_name}...')
+            logging.info(f'\tDownloading {file_name} ({i + 1}/{number_files})...')
 
             dest_pathname = os.path.join(local, file_name)
 
