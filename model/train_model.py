@@ -3,6 +3,7 @@ import logging
 import joblib
 
 from sklearn.linear_model import Ridge, Lasso
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -113,7 +114,7 @@ def train_model(df_model, population_tests_dir, grid_search):
     X = df_model
     y = df_model[target_var] / df_model['area']
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     logging.info("\tbuilding model...")
 

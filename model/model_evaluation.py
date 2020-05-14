@@ -7,6 +7,7 @@ import seaborn as sb
 from matplotlib import colors, cm
 
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.metrics import mean_absolute_error
 
 from model.tests_data import tests_actual
 from preprocessing.process_data import import_polygons_data, calculate_area
@@ -314,7 +315,11 @@ def model_evaluation(model, X_test, y_test, features, population_tests_dir, grid
 
     total_score = model.score(X_test, y_test)
 
+    y_pred = model.predict(X_test)
+    mae = mean_absolute_error(y_test, y_pred)
+
     logging.info(f'Total score: {total_score}')
+    logging.info(f'Mean absolute error: {mae}')
 
     plot_feature_results(model, features, plot)
 

@@ -10,6 +10,7 @@ def feature_mapping(x, order, intercept=False, only_self_terms=False):
     Maps the original features up to the chosen degree.
     Example for initial features a and b and chosen order of 3:
     [a b a^2 ab b^2 a^3 a^2b ab^2 b^3]
+
     :param x: array like object of m examples by n features
     :param order: order of the polynomial expansion mapping to perform
     :param intercept: If return array should include the intercept column

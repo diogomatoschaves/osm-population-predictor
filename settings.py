@@ -1,7 +1,7 @@
 
 
 feature_mapping_params = {
-    "order": 2,
+    "order": 3,
     "only_self_terms": True
 }
 
@@ -13,11 +13,12 @@ regressor_params = {
     },
     "GradientBoostingRegressor": {
         "n_estimators": 200,
-        "max_features": "sqrt",
+        "max_features": "auto",
+        "max_leaf_nodes": None
     },
     "Ridge": {},
     "Lasso": {
-        "alpha": 2,
+        "alpha": 1,
         "max_iter": 2000
     }
 }
