@@ -1,5 +1,7 @@
 # OSM Population Prediction Model
 
+_The associated blog post can be found [here](https://medium.com/@diogomatoschaves/estimating-the-population-of-arbitrarily-chosen-areas-533e81c2104e)_.
+
 ## Introduction
 
 This project consists of a model to predict the population of a given area, solely based on 
@@ -27,9 +29,9 @@ achieve that.
 
 The main results of the model, using a **Lasso** regressor are:
 
-| score | MSE | 
+| R2 score | Mean absolute error (inhabitants / km2) | 
 |-----------|--------|
-| 88.5%     |   110k | 
+| 88.9%     |   98.8 | 
 
 
 The full results of the model are presented in the section [Results](#results) below.
@@ -58,11 +60,24 @@ You can adjust the project config variables in [proj.conf](proj.conf).
 
 **input_data_file**: _Name of file with training data_ <br>
 **out_file**: _Name of file to save model on_ <br>
-**grid_search**: _Whether to perform grid search on the data_ <br>
 
 One can also adjust specific model parameters in [settings.py](settings.py).
 
-## Libraries Used
+## Project Files
+
+- [settings.py](settings.py) - file with configuration parameters
+- [basic_features.py](./notebooks/basic_features.ipynb) - notebook with workflow with basic OSM features
+- [all_features.py](./notebooks/all_features.ipynb) - notebook with workflow with extended OSM features
+- [main.py](main.py) - main python script that wraps all pipeline steps
+- [process_data.py](./preprocessing/process_data.py) - processes the data before being fed to the model
+- [train_model.py](./model/train_model.py) - contains the logic where the data is fitted into the model
+- [model_evaluation.py](./model/model_evaluation.py) - contains the logic for evaluating and showing the results of the model
+- [pipeline_classes.py](./model/pipeline_classes.py) - contains classes that are used in the machine learning pipeline
+- [helper_methods.py](./model/helper_methods.py) - contains helper methods used in the pipeline
+- [hexagons_basic_features_sample.geojson]() - dataset of hexagons with basic features (sample data)
+- [hexagons_all_features_sample.geojson]() - dataset of hexagons with extended features (sample data)
+
+## Libraries
 
 The main libraries used in this application are:
 
@@ -77,13 +92,9 @@ The main libraries used in this application are:
 
 ## Results
 
-A comparison between population predictions made with the model for some places / cities of the world is shown below:
-
-![results](utils/img/comparison_results_model.png)
-
-The main features of the model are:
-
-![features](utils/img/feature_coefficients.png) 
+Population estimates vs actual                  |  Coefficients of the model
+:-------------------------:|:-------------------------:
+![results](utils/img/comparison_results_model.png)  |  ![features](utils/img/feature_coefficients.png) 
 
 
 ## References
