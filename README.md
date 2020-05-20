@@ -48,7 +48,7 @@ $ conda env create --file environment.yml
    
 2. Download the dataset files:
 ```shell script
-$ python donwload.py
+$ python download.py
 ```
 
 3. Run the main script that pre-processes the data, trains the model and saves it.
